@@ -145,6 +145,7 @@ async function runBenchmark(totalPayments = 1) {
 
 runBenchmark(totalPayments).then(results => {
     console.log('------------------------------------------- RESULTS ---------------------------------------------------');
+    console.log(`Total Requests: ${totalPayments}`);
     console.log(`Average Time: ${results.paymentsAverageTime}`);
     console.log(`Failed Payments: ${results.failedPaymentsPercentage}%`);
     console.log(`Success Payments: ${results.successfulPaymentsPercentage}%`);
