@@ -12,7 +12,8 @@ function defaultValues() {
         amountOnWei,
         totalPayments,
         verbose,
-        waitBetweenRequests
+        waitBetweenRequests,
+        channels
     } = dotenv.parse(fs.readFileSync('.env'));
 
     return {
@@ -21,10 +22,11 @@ function defaultValues() {
         luminoPrefix,
         tokenAddress,
         partnerAddress,
-        amountOnWei,
-        totalPayments,
-        verbose,
-        waitBetweenRequests
+        amountOnWei: parseInt(amountOnWei),
+        totalPayments: parseInt(totalPayments),
+        verbose: verbose === 'true',
+        waitBetweenRequests: parseInt(waitBetweenRequests),
+        channels: channels ? JSON.parse(channels) : null
     };
 }
 
@@ -62,6 +64,19 @@ function setup(args) {
         setup.verbose = true;
     }
 
+    if (args['channels']) {
+        let channels = [];
+        for (let channel of args['channels']) {
+            let tokenAddress = channel.split(',')[0];
+            let partnerAddress = channel.split(',')[1];
+            channels.push({
+                tokenAddress,
+                partnerAddress
+            });
+        }
+        setup.channels = channels;
+    }
+
     return {
         luminoEndpoint: setup.luminoEndpoint,
         luminoPort: setup.luminoPort,
@@ -71,7 +86,8 @@ function setup(args) {
         amountOnWei: setup.amountOnWei,
         totalPayments: setup.totalPayments,
         verbose: setup.verbose,
-        waitBetweenRequests: setup.waitBetweenRequests
+        waitBetweenRequests: setup.waitBetweenRequests,
+        channels: setup.channels
     }
 }
 
@@ -82,30 +98,47 @@ function formatMillis(time) {
     return time;
 }
 
-function buildPaymentRequest({amountOnWei, luminoPrefix, tokenAddress, partnerAddress, luminoEndpoint, luminoPort}) {
+function buildPaymentRequests({amountOnWei, luminoPrefix, tokenAddress, partnerAddress, luminoEndpoint, luminoPort, channels}) {
+    const requests = [];
     const requestBody = `{"amount":"${amountOnWei}"}`;
-
-    const url = `${luminoPrefix}/payments/${tokenAddress}/${partnerAddress}`;
-
-    const requestSetup = {
-        hostname: luminoEndpoint,
-        port: luminoPort,
-        path: url,
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Content-Length': requestBody.length
-        }
-    };
-
-    return {
-        requestSetup,
-        requestBody
-    };
+    if (channels) {
+        channels.forEach(channel => {
+            const options = {
+                hostname: luminoEndpoint,
+                port: luminoPort,
+                path: `${luminoPrefix}/payments/${channel.tokenAddress}/${channel.partnerAddress}`,
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Content-Length': requestBody.length
+                }
+            };
+            requests.push({
+                options,
+                requestBody
+            });
+        });
+    } else {
+        const options = {
+            hostname: luminoEndpoint,
+            port: luminoPort,
+            path: `${luminoPrefix}/payments/${tokenAddress}/${partnerAddress}`,
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': requestBody.length
+            }
+        };
+        requests.push({
+            options,
+            requestBody
+        });
+    }
+    return requests;
 }
 
 module.exports = {
     setup,
     formatMillis,
-    buildPaymentRequest
+    buildPaymentRequests
 };
