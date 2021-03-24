@@ -7,8 +7,8 @@ const setupValues = utils.setup(args);
 
 benchmark.run(setupValues).then(results => {
     const {
-        totalPayments,
-        paymentsAverageTime,
+        totalRequests,
+        paymentDurationAverage,
         failedPaymentsPercentage,
         successfulPaymentsPercentage,
         paymentsPerSecond,
@@ -16,8 +16,8 @@ benchmark.run(setupValues).then(results => {
     } = results;
 
     console.log('------------------------------------------- RESULTS ---------------------------------------------------');
-    console.log(`Total Requests: ${totalPayments}`);
-    console.log(`Average Time: ${paymentsAverageTime}`);
+    console.log(`Total Requests: ${totalRequests}`);
+    console.log(`Average Time: ${paymentDurationAverage}`);
     console.log(`Failed Payments: ${failedPaymentsPercentage}%`);
     console.log(`Success Payments: ${successfulPaymentsPercentage}%`);
     console.log(`Payments per second: ${paymentsPerSecond}`);

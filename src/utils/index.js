@@ -9,6 +9,7 @@ function defaultValues() {
         luminoPrefix,
         tokenAddress,
         partnerAddress,
+        partnerAddresses,
         amountOnWei,
         totalPayments,
         verbose,
@@ -22,6 +23,7 @@ function defaultValues() {
         luminoPrefix,
         tokenAddress,
         partnerAddress,
+        partnerAddresses: partnerAddresses ? partnerAddresses.split(','): null,
         amountOnWei: parseInt(amountOnWei),
         totalPayments: parseInt(totalPayments),
         verbose: verbose === 'true',
@@ -48,12 +50,19 @@ function setup(args) {
         setup.partnerAddress = args['partnerAddress'];
     }
 
+    if (args['partnerAddresses']) {
+        setup.partnerAddresses = [];
+        for (let partnerAddress of args['partnerAddresses'].split(',')) {
+            setup.partnerAddresses.push(partnerAddress);
+        }
+    }
+
     if (args['amountOnWei']) {
-        setup.amountOnWei = args['amountOnWei'];
+        setup.amountOnWei = parseInt(args['amountOnWei']);
     }
 
     if (args['waitBetweenRequests']) {
-        setup.waitBetweenRequests = parseInt(args['waitBetweenRequests']) * 1000;
+        setup.waitBetweenRequests = parseInt(args['waitBetweenRequests']);
     }
 
     if (args['totalPayments']) {
@@ -65,16 +74,15 @@ function setup(args) {
     }
 
     if (args['channels']) {
-        let channels = [];
+        setup.channels = [];
         for (let channel of args['channels']) {
             let tokenAddress = channel.split(',')[0];
             let partnerAddress = channel.split(',')[1];
-            channels.push({
+            setup.channels.push({
                 tokenAddress,
                 partnerAddress
             });
         }
-        setup.channels = channels;
     }
 
     return {
@@ -83,6 +91,7 @@ function setup(args) {
         luminoPrefix: setup.luminoPrefix,
         tokenAddress: setup.tokenAddress,
         partnerAddress: setup.partnerAddress,
+        partnerAddresses: setup.partnerAddresses,
         amountOnWei: setup.amountOnWei,
         totalPayments: setup.totalPayments,
         verbose: setup.verbose,
@@ -93,12 +102,12 @@ function setup(args) {
 
 function formatMillis(time) {
     if (time) {
-        return time < 1000 ? `${time}ms` : time < 1000 * 60 ? `${time / 1000}s` : time < 1000 * 60 * 60 ? `${time / 1000 / 60}m` : `${time / 1000 / 60 / 60}h`;
+        return time < 1000 ? `${time.toFixed(0)}ms` : time < 1000 * 60 ? `${(time / 1000).toFixed(1)}s` : time < 1000 * 60 * 60 ? `${(time / 1000 / 60).toFixed(1)}m` : `${(time / 1000 / 60 / 60).toFixed(1)}h`;
     }
     return time;
 }
 
-function buildPaymentRequests({amountOnWei, luminoPrefix, tokenAddress, partnerAddress, luminoEndpoint, luminoPort, channels}) {
+function buildPaymentRequests({amountOnWei, luminoPrefix, tokenAddress, partnerAddress, partnerAddresses, luminoEndpoint, luminoPort, channels}) {
     const requests = [];
     const requestBody = `{"amount":"${amountOnWei}"}`;
     if (channels) {
@@ -107,6 +116,23 @@ function buildPaymentRequests({amountOnWei, luminoPrefix, tokenAddress, partnerA
                 hostname: luminoEndpoint,
                 port: luminoPort,
                 path: `${luminoPrefix}/payments/${channel.tokenAddress}/${channel.partnerAddress}`,
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Content-Length': requestBody.length
+                }
+            };
+            requests.push({
+                options,
+                requestBody
+            });
+        });
+    } else if (partnerAddresses) {
+        partnerAddresses.forEach(address => {
+            const options = {
+                hostname: luminoEndpoint,
+                port: luminoPort,
+                path: `${luminoPrefix}/payments/${tokenAddress}/${address}`,
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
