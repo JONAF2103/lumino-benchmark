@@ -129,7 +129,7 @@ async function run(setupValues) {
         failedPaymentsPercentage,
         successfulPaymentsPercentage,
         paymentsPerSecond: isNaN(paymentsPerSecond) ? 'N/A' : paymentsPerSecond.toFixed(1),
-        benchmarkDuration: isNaN(benchmarkDuration) ? 'N/A' : utils.formatMillis(benchmarkDuration)
+        benchmarkDuration
     }
 }
 
@@ -143,7 +143,9 @@ function getTotalPaymentDurations(paymentDurations) {
 
 function getBenchmarkDuration(benchmarkStart, waitBetweenRequests, totalPayments, failedPaymentAmount) {
     const benchmarkEnd = moment();
-    return benchmarkEnd.diff(benchmarkStart) - (waitBetweenRequests * (totalPayments - failedPaymentAmount));
+    let benchmarkDuration = benchmarkEnd.diff(benchmarkStart);
+    let result = isNaN(benchmarkDuration) ? 'N/A' : utils.formatMillis(benchmarkDuration);
+    return result + ` (waiting between requests ${waitBetweenRequests * (totalPayments - failedPaymentAmount)})`
 }
 
 function getPaymentsPerSecond(paymentEstimations) {
